@@ -45,27 +45,19 @@ function Compare-Pairs {
 function Compare-OverLappingPairs {
     param ( $pair )
 
-# two < three = 0
-# four < one = 0
-        if (
-                ($pair.second -lt $pair.third) -and
-                ($pair.fouth -lt $pair.first)
-           ) { return 0 }
+        for ( $x = $pair.first; $x -le $pair.second; $x++) {
+            
+            for ( $y = $pair.third; $y -le $pair.fourth; $y++) {
 
-# one <= three 
-# two >= three
-    if (
-            ($pair.one -le $pair.third) -and
-            ($pair.two -le $pair.third)
-       ) { return 1 }
+                if ( $x -eq $y ) {
 
+                    return 1
 
-# three <= one 
-# four >= one
-    if (
-            ($pair.third -le $pair.first) -and
-            ($pair.fourth -le $pair.first)
-       ) { return 1 }
+                }
+
+            }
+
+        }
 
        return 0
 

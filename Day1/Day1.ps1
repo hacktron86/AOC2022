@@ -35,11 +35,12 @@ function Get-CalorieCount {
                     $elf.totalCalories = $total
                 }
 
-            $res = $elves.totalCalories | 
-                Measure-Object -Max | 
-                Select-Object -ExpandProperty Maximum
-                return $res
+            $res = $elves | 
+            Select-Object -ExpandProperty totalCalories |
+            Sort-Object |
+            Select-Object -Last 3 
+                return $res | Measure-Object -Sum | Select-Object -ExpandProperty Sum
         }
 }
 
-Get-CalorieCount -list (Get-Content "testinput.txt")
+Get-CalorieCount -list (Get-Content "input.txt")
