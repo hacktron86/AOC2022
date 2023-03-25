@@ -1,50 +1,102 @@
 Add-Type -AssemblyName System.Collections
 
-function Get-FinalCrates {
-    param ( $file )
+function Get-MoveList {
+    param ( $content )
 
-        $content = Get-Content $file -Raw
+        $movesList = New-Object System.Collections.ArrayList
 
-        $cratesLL = New-Object System.Collections.ArrayList
-#$res = New-Object System.Collections.Generic.LinkedList[char]
-        $sections = $content -split "`n`r"
-        $topSection = $sections[0] -split "`n"
-        $bottomSection = $sections[1]
+        $moves =
+        $content | 
+        Select-String -Pattern '(?:move\s)(\d)(?:\s)(?:from\s)(\d)(?:\s)(?:to\s)(\d)' -AllMatches
 
-        $colCount = 
-        $topSection[-1].replace(" ","").replace("\n\r","") | 
-        Select-String -Pattern '\d' -AllMatches | 
-        Select-Object -ExpandProperty Matches | 
-        Select-Object -ExpandProperty Value |
-        Measure-Object -Maximum |
-        Select-Object -ExpandProperty Maximum
-
-        for ( $z = 0; $z -lt $colCount; $z++) {
-            [void]$cratesLL.Add((New-Object System.Collections.Generic.LinkedList[char]))
+        foreach ( $move in $moves.Matches ) {
+            [void]$movesList.Add(($move.Groups | Select-Object -Skip 1 -ExpandProperty Value))
         }
 
-    for ( $y = 0; $y -lt ($topSection.length - 1); $y++) {
-        $charArray = $topSection[$y].ToCharArray()
+    return $movesList
+
+}
+
+function Get-CrateList {
+    param ( $content,$colCount )
+
+        $content = $content -split "`n"
+
+        $crateList = New-Object System.Collections.ArrayList
+
+        for ( $z = 0; $z -lt $colCount; $z++) {
+            [void]$crateList.Add((New-Object System.Collections.Generic.LinkedList[char]))
+        }
+    for ( $y = 0; $y -lt ($content.length - 1); $y++) {
+        $charArray = $content[$y].ToCharArray()
             $count = 0
             for ( $i = 1; $i -lt $charArray.length; $i += 4 ) {
                 if ( ' ' -ne $charArray[$i]) {
-                    [void]$cratesLL[$count].AddFirst($charArray[$i])
+                    [void]$crateList[$count].AddFirst($charArray[$i])
                 }
                 $count++
             }
     }
+    return $crateList
+}
 
-    $moves =
-        $bottomSection | 
-        Select-String -Pattern '(?:move\s)(\d)(?:\s)(?:from\s)(\d)(?:\s)(?:to\s)(\d)' -AllMatches
+function Get-ColumnCount {
+    param ( $content )
 
-    $movesList = New-Object System.Collections.ArrayList
+        $content = $content -split "`n"
 
-    foreach ( $move in $moves.Matches ) {
-        $movesList.Add(($move.Groups | Select-Object -Skip 1 -ExpandProperty Value))
+        $res =
+        ($content -split "`n")[-1] |
+        ForEach-Object {
+            $_.replace(" ","").replace("\n\r","") |
+                Select-String -Pattern '\d' -AllMatches |
+                Select-Object -ExpandProperty Matches |
+                Select-Object -ExpandProperty Value |
+                Measure-Object -Maximum |
+                Select-Object -ExpandProperty Maximum
         }
 
-    return $cratesLL
+    return $res
+
+}
+
+function Move-Crates {
+    param ( $movesList, $crateList )
+
+        Write-Host $crateList[1] | Format-Table
+        [void]$crateList[1].RemoveLast
+        Write-Host $crateList[1] | Format-Table
+
+        foreach ( $move in $movesList ) {
+            
+            # Write-Host "Move: $move"
+            # Write-Host "Crates: `n$crateList"
+            # $crateList[($move[2]-1)].Add(($crateList[($move[1]-1)] | Select-Object -Last $move[0]))
+            # $crateList[($move[1]-1)].RemoveLast()
+            # Write-Host "Crates Moved: `n$crateList"
+
+
+        }
+
+
+    return ""
+}
+
+function Get-FinalCrates {
+    param ( $file )
+
+        $content = Get-Content $file -Raw
+        $sections = $content -split "`n`r"
+
+        $colCount = Get-ColumnCount -content $sections[0]
+
+        $movesList = Get-MoveList -content $sections[1]
+
+        $crateList = Get-CrateList -content $sections[0] -colCount $colCount
+
+        $res = Move-Crates -movesList $movesList -crateList $crateList
+
+        return $res
 
 }
 
@@ -58,7 +110,7 @@ function Invoke-Main {
         $partwo = "" 
 
         return $partOne
-        #return "PartOne: `n$partOne `n`n| PartTwo: `n$partwo"
+#return "PartOne: `n$partOne `n`n| PartTwo: `n$partwo"
 }
 
 Invoke-Main -file "testinput.txt"
