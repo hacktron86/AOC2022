@@ -60,29 +60,54 @@ function Get-ColumnCount {
 
 }
 
-function Move-Crates {
+function Move-CratesPartOne {
     param ( $movesList, [ref]$crateList )
 
         foreach ( $move in $movesList ) {
 
             $count = $move[0]
-            $firstCol = $move[1] - 1
-            $secondCol = $move[2] - 1
+                $firstCol = $move[1] - 1
+                $secondCol = $move[2] - 1
 
-            for ($i = 0; $i -lt $count; $i ++) {
+                for ($i = 0; $i -lt $count; $i ++) {
 
-                [void]$crateList.Value[$secondCol].Add(
-                    $crateList.Value[$firstCol].last.value
-                )
-                [void]$crateList.Value[$firstCol].RemoveLast()
+                    [void]$crateList.Value[$secondCol].Add(
+                            $crateList.Value[$firstCol].last.value
+                            )
+                        [void]$crateList.Value[$firstCol].RemoveLast()
 
-            }
-            
+                }
+
         }
 
 }
 
-function Get-FinalCrates {
+function Move-CratesPartTwo {
+    param ( $movesList, [ref]$crateList )
+
+        foreach ( $move in $movesList ) {
+
+            $count = $move[0]
+                $firstCol = $move[1] - 1
+                $secondCol = $move[2] - 1
+
+                $cratesToMove = $crateList.Value[$firstCol] | Select-Object -Last $count
+                foreach ($crate in $cratesToMove) {
+                    [void]$crateList.Value[$secondCol].Add(
+                            $crate
+                            )
+                }
+            for ($i = 0; $i -lt $count; $i ++) {
+
+                [void]$crateList.Value[$firstCol].RemoveLast()
+
+            }
+
+        }
+
+}
+
+function Get-FinalCratesPartOne {
     param ( $file )
 
         $content = Get-Content $file -Raw
@@ -94,7 +119,27 @@ function Get-FinalCrates {
 
         $crateList = Get-CrateList -content $sections[0] -colCount $colCount
 
-        Move-Crates -movesList $movesList -crateList ([ref]$crateList)
+        Move-CratesPartOne -movesList $movesList -crateList ([ref]$crateList)
+
+        $finalCrates = $crateList | ForEach-Object { $_.last.value } | Join-String
+ 
+        return $finalCrates
+
+}
+
+function Get-FinalCratesPartTwo {
+    param ( $file )
+
+        $content = Get-Content $file -Raw
+        $sections = $content -split "`n`r"
+
+        $colCount = Get-ColumnCount -content $sections[0]
+
+        $movesList = Get-MoveList -content $sections[1]
+
+        $crateList = Get-CrateList -content $sections[0] -colCount $colCount
+
+        Move-CratesPartTwo -movesList $movesList -crateList ([ref]$crateList)
 
         $finalCrates = $crateList | ForEach-Object { $_.last.value } | Join-String
  
@@ -107,12 +152,11 @@ function Invoke-Main {
             [string]$file
           )
 
-        $partOne = Get-FinalCrates -file $file
+        $partOne = Get-FinalCratesPartOne -file $file
 
-        $partwo = "" 
+        $partTwo = Get-FinalCratesPartTwo -file $file
 
-        return $partOne
-#return "PartOne: `n$partOne `n`n| PartTwo: `n$partwo"
+        return "PartOne: $partOne`n`nPartTwo: $partTwo"
 }
 
 Invoke-Main -file "input.txt"

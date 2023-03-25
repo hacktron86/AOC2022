@@ -3,8 +3,13 @@ BeforeAll {
 }
 
 Describe 'Day 5 Tests' {
-    It 'Validate Final Crates of Each Stack' {
-        $crates = Get-FinalCrates -file "testinput.txt"
+    It 'Validate Part One' {
+        $crates = Get-FinalCratesPartOne -file "testinput.txt"
             $crates | should -be "CMZ"
+    }
+
+    It 'Validate Part Two' {
+        $crates = Get-FinalCratesPartTwo -file "testinput.txt"
+            $crates | should -be "MCD"
     }
 }
