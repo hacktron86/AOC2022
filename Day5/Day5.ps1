@@ -7,7 +7,7 @@ function Get-MoveList {
 
         $moves =
         $content | 
-        Select-String -Pattern '(?:move\s)(\d)(?:\s)(?:from\s)(\d)(?:\s)(?:to\s)(\d)' -AllMatches
+        Select-String -Pattern '(?:move\s)(\d+)(?:\s)(?:from\s)(\d+)(?:\s)(?:to\s)(\d+)' -AllMatches
 
         foreach ( $move in $moves.Matches ) {
             [void]$movesList.Add(($move.Groups | Select-Object -Skip 1 -ExpandProperty Value))
@@ -61,25 +61,25 @@ function Get-ColumnCount {
 }
 
 function Move-Crates {
-    param ( $movesList, $crateList )
-
-        Write-Host $crateList[1] | Format-Table
-        [void]$crateList[1].RemoveLast
-        Write-Host $crateList[1] | Format-Table
+    param ( $movesList, [ref]$crateList )
 
         foreach ( $move in $movesList ) {
+
+            $count = $move[0]
+            $firstCol = $move[1] - 1
+            $secondCol = $move[2] - 1
+
+            for ($i = 0; $i -lt $count; $i ++) {
+
+                [void]$crateList.Value[$secondCol].Add(
+                    $crateList.Value[$firstCol].last.value
+                )
+                [void]$crateList.Value[$firstCol].RemoveLast()
+
+            }
             
-            # Write-Host "Move: $move"
-            # Write-Host "Crates: `n$crateList"
-            # $crateList[($move[2]-1)].Add(($crateList[($move[1]-1)] | Select-Object -Last $move[0]))
-            # $crateList[($move[1]-1)].RemoveLast()
-            # Write-Host "Crates Moved: `n$crateList"
-
-
         }
 
-
-    return ""
 }
 
 function Get-FinalCrates {
@@ -94,9 +94,11 @@ function Get-FinalCrates {
 
         $crateList = Get-CrateList -content $sections[0] -colCount $colCount
 
-        $res = Move-Crates -movesList $movesList -crateList $crateList
+        Move-Crates -movesList $movesList -crateList ([ref]$crateList)
 
-        return $res
+        $finalCrates = $crateList | ForEach-Object { $_.last.value } | Join-String
+ 
+        return $finalCrates
 
 }
 
@@ -113,4 +115,4 @@ function Invoke-Main {
 #return "PartOne: `n$partOne `n`n| PartTwo: `n$partwo"
 }
 
-Invoke-Main -file "testinput.txt"
+Invoke-Main -file "input.txt"
