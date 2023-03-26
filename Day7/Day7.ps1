@@ -4,6 +4,7 @@ class Directory {
             [bool] $IsDirectory
                 [Directory[]] $Children
                     [Directory] $Parent
+                        [int] $directorySize
 
                         Directory($name, $size, $isDirectory, $parent) {
                             $this.Name = $name
@@ -26,15 +27,30 @@ class Directory {
                     $totalSize += $child.Size
                 }
             }
+        $this.directorySize = $totalSize
         return $totalSize
+    }
+
+    [int] GetPartOne() {
+        $partOneSum = if($this.directorySize -gt 100000) {0} else {$this.directorySize}
+            foreach ($child in $this.Children) {
+                if ($child.IsDirectory) {
+                    $partOneSum += $child.GetPartOne()
+                } else {
+                    $totalSize += $child.directorySize
+                }
+            }
+        return $partOneSum
+    }
+
+    [void] UpdateDirectorySize() {
+        $this.directorySize = $this.GetTotalSize()
     }
 }
 
 function Build-Directory {
 
-    $lineInput = Convert-InputToArray -filename "testinput.txt"
-        $lineInput = $lineInput[1..($lineInput.count - 1)]
-
+    $lineInput = Convert-InputToArray -filename "input.txt"
         $root = [Directory]::new("/", 0, $true, $null)
         $cur = $root
 
@@ -54,25 +70,13 @@ function Build-Directory {
                 '\$\scd\s\.\.' { 
                     "Go up a directory" 
                         $cur = $cur.Parent
-                    }
+                }
             }
         }
 
+    $null = $root.GetTotalSize()
+
     return $root
-
-   # $root = [Directory]::new("root", 0, $true)
-   #     $subdir1 = [Directory]::new("subdir1", 0, $true)
-   #     $subdir2 = [Directory]::new("subdir2", 0, $true)
-   #     $file1 = [Directory]::new("file1", 50, $false)
-   #     $file2 = [Directory]::new("file2", 75, $false)
-
-   #     $root.AddChild($subdir1)
-   #     $root.AddChild($subdir2)
-   #     $subdir1.AddChild($file1)
-   #     $subdir2.AddChild($file2)
-
-   #     $root.GetTotalSize()
-
 
 }
 
@@ -85,7 +89,6 @@ function New-File([string]$name,[int]$size,[Directory]$parent) {
 }
 
 function Convert-InputToArray([string]$filename) {
-
-    return (Get-Content $filename) -split "`n"
-
+    $lineInput = (Get-Content $filename) -split "`n"
+        return $lineInput[1..($lineInput.count - 1)]
 }
