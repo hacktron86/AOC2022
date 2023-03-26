@@ -1,93 +1,91 @@
-using namespace System.Collections.Generic
+class Directory {
+    [string] $Name
+        [int] $Size
+            [bool] $IsDirectory
+                [Directory[]] $Children
+                    [Directory] $Parent
 
-function Start-PartOne {
-    [CmdletBinding()]
-        param ([string]$fileName)
-
-            $fileContent = (Get-Content $fileName) -split "`n"
-
-            $fileSystem = [List[PSCustomObject]]::new()
-
-            $currentName = [List[char]]::new()
-
-            $fileSystem.Add([PSCustomObject]@{Name="/";Type="d";Children=[List[PSCustomObject]]::new()})
-
-            $currentNav = $fileSystem
-
-            foreach ($line in $fileContent) {
-
-
-                Write-Verbose $line
-
-                    switch -Regex ($line) {
-                        '\$\scd\s\/' { 
-                            $currentName.Add(($_ -split " ")[2]) 
+                        Directory($name, $size, $isDirectory, $parent) {
+                            $this.Name = $name
+                                $this.Size = $size
+                                $this.IsDirectory = $isDirectory
+                                $this.Children = @()
+                                $this.Parent = $parent
                         }
-                        '\$\scd\s\w' { 
-                            $currentName.Add(($_ -split " ")[2]) 
-                                $currentNav = ($filesystem|Select-Object Children).Children | Where-Object { $_.Name -eq $currentName[-1]}
-                        }
-                        '\$\scd\s\.\.' { $currentName.Remove($currentName[-1]) } # navigate up a directory
-                    'dir\s\w' { Add-Child -name (($_ -split " ")[1]) -type "d" -filesystem $currentNav } # add a sub directory
-                    '\d' { Add-Child -name (($_ -split " ")[1]) -type "f" -size (($_ -split " ")[0]) -fileSystem $currentNav} # add a file
-                    default {} # default
-            }
 
+    [void] AddChild([Directory]$child) {
+        $this.Children += $child
     }
 
-    return $fileSystem
-
-}
-
-function Enter-Directory {
-    param([string]$name,[List[PSCustomObject]]$fileSystem)
-}
-
-function Add-Child {
-    param([string]$name,[string]$type,[int]$size,[List[PSCustomObject]]$fileSystem)
-
-        Write-Verbose $name
-        Write-Verbose $name
-
-        $fileSystemToEdit = ($fileSystem | Select-Object Children).Children
-        $null = switch ($type) {
-            "d" {
-                $fileSystemToEdit.Add(
-                        [PSCustomObject]@{
-                        Name = $name
-                        Type = $type
-                        Children = [List[PSCustomObject]]::new()
-                        }
-                        )
+    [int] GetTotalSize() {
+        $totalSize = $this.Size
+            foreach ($child in $this.Children) {
+                if ($child.IsDirectory) {
+                    $totalSize += $child.GetTotalSize()
+                } else {
+                    $totalSize += $child.Size
+                }
             }
-            "f" {
-                $fileSystemToEdit.Add(
-                        [PSCustomObject]@{
-                        Name = $name
-                        Type = $type
-                        Size = $size
-                        }
-                        )
-            }
-        }
-
-}
-
-function Exit-Directory {
+        return $totalSize
+    }
 }
 
 function Build-Directory {
-    param([string]$line,[List[PSCustomObject]]$fileSystem)
 
-        switch -Regex ($line) {
-            '\$\scd\s(?:\w|\/)' { ($_ -split " ")[2] }
-#     Build-Directory -fileSystem ($fileSystem | Where-Object { $_.Name -eq $(($_ -split " ")[2]) })
-# } # cd into a directory
-    '\$\scd\s\.\.' { Exit-Directory } # navigate up a directory
-# '\$\sls' {Get-Message} # list contents
-        'dir\s\w' { Add-Child -name (($_ -split " ")[1]) -type "d" -filesystem $fileSystem} # add a sub directory
-        '\d' { Add-Child -name (($_ -split " ")[1]) -type "f" -size (($_ -split " ")[0]) -fileSystem $fileSystem} # add a file
-        default {} # default
+    $lineInput = Convert-InputToArray -filename "testinput.txt"
+        $lineInput = $lineInput[1..($lineInput.count - 1)]
+
+        $root = [Directory]::new("/", 0, $true, $null)
+        $cur = $root
+
+        $null = foreach ($line in $lineInput) {
+            switch -regex ($line) {
+                '\$\scd\s(?<Name>\/|[a-z]+)' { 
+                    "Create directory $($matches.Name)" 
+                        $dir = New-Directory -Name $matches.Name -Parent $cur
+                        $cur.AddChild($dir)
+                        $cur = $dir
+                }
+                '(?<Size>\d+)\s(?<Name>\w+\.\w+|\w+)' { 
+                    "Create file $($matches.Name)" 
+                        $file = New-File -Name $matches.Name -Size $matches.Size -Parent $cur
+                        $cur.AddChild($file)
+                }
+                '\$\scd\s\.\.' { 
+                    "Go up a directory" 
+                        $cur = $cur.Parent
+                    }
+            }
+        }
+
+    return $root
+
+   # $root = [Directory]::new("root", 0, $true)
+   #     $subdir1 = [Directory]::new("subdir1", 0, $true)
+   #     $subdir2 = [Directory]::new("subdir2", 0, $true)
+   #     $file1 = [Directory]::new("file1", 50, $false)
+   #     $file2 = [Directory]::new("file2", 75, $false)
+
+   #     $root.AddChild($subdir1)
+   #     $root.AddChild($subdir2)
+   #     $subdir1.AddChild($file1)
+   #     $subdir2.AddChild($file2)
+
+   #     $root.GetTotalSize()
+
+
 }
+
+function New-Directory([string]$name,[Directory]$parent) {
+    return [Directory]::new($name, 0, $true, $parent)
+}
+
+function New-File([string]$name,[int]$size,[Directory]$parent) {
+    return [Directory]::new($name, $size, $false, $parent) 
+}
+
+function Convert-InputToArray([string]$filename) {
+
+    return (Get-Content $filename) -split "`n"
 
 }
