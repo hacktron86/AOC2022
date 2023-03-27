@@ -6,13 +6,13 @@ class Directory {
                     [Directory] $Parent
                         [int] $directorySize
 
-                        Directory($name, $size, $isDirectory, $parent) {
-                            $this.Name = $name
-                                $this.Size = $size
-                                $this.IsDirectory = $isDirectory
-                                $this.Children = @()
-                                $this.Parent = $parent
-                        }
+                            Directory($name, $size, $isDirectory, $parent) {
+                                $this.Name = $name
+                                    $this.Size = $size
+                                    $this.IsDirectory = $isDirectory
+                                    $this.Children = @()
+                                    $this.Parent = $parent
+                            }
 
     [void] AddChild([Directory]$child) {
         $this.Children += $child
@@ -28,7 +28,30 @@ class Directory {
                 }
             }
         $this.directorySize = $totalSize
-        return $totalSize
+            return $totalSize
+    }
+
+    [PSCustomObject[]] GetAllDirectorySizes() {
+        $directorySizes = @()
+            $directorySizes += 
+            [PSCustomObject]@{
+                Size = $this.directorySize
+                    Difference = 29641087 - $this.directorySize
+            }
+        foreach ($child in ($this.Children | Where-Object { $_.isDirectory}) ) {
+            $directorySizes += $child.GetAllDirectorySizes()
+        }
+        return $directorySizes
+    }
+
+    [int] GetPartTwo() {
+        $res = $this.GetAllDirectorySizes() 
+            $max = 
+            $res | 
+            Where-Object { $_.Difference -lt 0 } | 
+            Measure-Object -Property Difference -Maximum |
+            Select-Object -ExpandProperty Maximum
+            return ($res | Where-Object { $_.Difference -eq $max }).Size
     }
 
     [int] GetPartOne() {
@@ -75,6 +98,7 @@ function Build-Directory {
         }
 
     $null = $root.GetTotalSize()
+
 
     return $root
 

@@ -192,7 +192,7 @@ $ cd lrnb
 $ ls
 109881 bjpbs
 dir jssnn
-46901 npmw
+46902 npmw
 $ cd jssnn
 $ ls
 9216 sgrp
