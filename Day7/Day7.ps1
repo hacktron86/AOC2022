@@ -60,7 +60,7 @@ class Directory {
         $directorySizes += 
         [PSCustomObject]@{
             Size       = $this.directorySize
-            Difference = 29641087 - $this.directorySize
+            Difference = 358914 - $this.directorySize
         }
         foreach ($child in ($this.Children | Where-Object { $_.isDirectory }) ) {
             $directorySizes += $child.GetAllDirectorySizes()
