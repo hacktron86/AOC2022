@@ -1,5 +1,4 @@
-class Directory
-{
+class Directory {
     [string] $Name
     [int] $Size
     [bool] $IsDirectory
@@ -7,8 +6,7 @@ class Directory
     [Directory] $Parent
     [int] $directorySize
 
-    Directory($name, $size, $isDirectory, $parent)
-    {
+    Directory($name, $size, $isDirectory, $parent) {
         $this.Name = $name
         $this.Size = $size
         $this.IsDirectory = $isDirectory
@@ -16,54 +14,40 @@ class Directory
         $this.Parent = $parent
     }
 
-    [int] SubDirectoryCount()
-    {
-        $totalCount = if ($this.IsDirectory)
-        {1
-        } else
-        {0
-        }
-        foreach ($child in $this.Children)
-        {
-            if ($child.IsDirectory)
-            {
+    [int] SubDirectoryCount() {
+        $totalCount = if ($this.IsDirectory) { 1 } else { 0 }
+        foreach ($child in $this.Children) {
+            if ($child.IsDirectory) {
                 $totalCount += $child.SubDirectoryCount()
             }
         }
         return $totalCount
     }
 
-    [int] FileCount()
-    {
+    [int] FileCount() {
         $totalCount = 0
-        foreach ($child in $this.Children)
-        {
-            if ($child.IsDirectory)
-            {
+        foreach ($child in $this.Children) {
+            if ($child.IsDirectory) {
                 $totalCount += $child.FileCount()
-            } else
-            {
+            }
+            else {
                 $totalCount += 1
             }
         }
         return $totalCount
     }
 
-    [void] AddChild([Directory]$child)
-    {
+    [void] AddChild([Directory]$child) {
         $this.Children += $child
     }
 
-    [int] GetTotalSize()
-    {
+    [int] GetTotalSize() {
         $totalSize = $this.Size
-        foreach ($child in $this.Children)
-        {
-            if ($child.IsDirectory)
-            {
+        foreach ($child in $this.Children) {
+            if ($child.IsDirectory) {
                 $totalSize += $child.GetTotalSize()
-            } else
-            {
+            }
+            else {
                 $totalSize += $child.Size
             }
         }
@@ -71,60 +55,53 @@ class Directory
         return $totalSize
     }
 
-    [PSCustomObject[]] GetAllDirectorySizes()
-    {
+    [PSCustomObject[]] GetAllDirectorySizes() {
         $directorySizes = @()
         $directorySizes += 
         [PSCustomObject]@{
-            Size = $this.directorySize
+            Size       = $this.directorySize
             Difference = 29641087 - $this.directorySize
         }
-        foreach ($child in ($this.Children | Where-Object { $_.isDirectory}) )
-        {
+        foreach ($child in ($this.Children | Where-Object { $_.isDirectory }) ) {
             $directorySizes += $child.GetAllDirectorySizes()
         }
         return $directorySizes
     }
 
-    [int] GetPartTwo()
-    {
+    [int] GetPartTwo() {
+
         $res = $this.GetAllDirectorySizes() 
-        $max = 
-        $res | 
-            Where-Object { $_.Difference -lt 0 } | 
-            Measure-Object -Property Difference -Maximum |
-            Select-Object -ExpandProperty Maximum
+
+        $max = $res | 
+        Where-Object { $_.Difference -lt 0 } | 
+        Measure-Object -Property Difference -Maximum |
+        Select-Object -ExpandProperty Maximum
+
         return ($res | Where-Object { $_.Difference -eq $max }).Size
+
     }
 
-    [int] GetPartOne()
-    {
-        $partOneSum = if($this.directorySize -gt 100000)
-        {0
-        } else
-        {$this.directorySize
+    [int] GetPartOne() {
+        $partOneSum = if ($this.directorySize -gt 100000) { 0 } else {
+            $this.directorySize
         }
-        foreach ($child in $this.Children)
-        {
-            if ($child.IsDirectory)
-            {
+        foreach ($child in $this.Children) {
+            if ($child.IsDirectory) {
                 $partOneSum += $child.GetPartOne()
-            } else
-            {
+            }
+            else {
                 $totalSize += $child.directorySize
             }
         }
         return $partOneSum
     }
 
-    [void] UpdateDirectorySize()
-    {
+    [void] UpdateDirectorySize() {
         $this.directorySize = $this.GetTotalSize()
     }
 }
 
-function Build-Directory
-{
+function Build-Directory {
 
     $lineInput = Convert-InputToArray -filename "input.txt"
     $root = [Directory]::new("/", 0, $true, $null)
@@ -132,27 +109,22 @@ function Build-Directory
     $directoryCount = 0
     $fileCount = 0
 
-    $null = foreach ($line in $lineInput)
-    {
-        switch -regex ($line)
-        {
-            '\$\scd\s(?<Name>\/|[a-z]+)'
-            { 
+    $null = foreach ($line in $lineInput) {
+        switch -regex ($line) {
+            '\$\scd\s(?<Name>\/|[a-z]+)' { 
                 "Create directory $($matches.Name)" 
                 $directoryCount++
                 $dir = New-Directory -Name $matches.Name -Parent $cur
                 $cur.AddChild($dir)
                 $cur = $dir
             }
-            '(?<Size>\d+)\s(?<Name>\w+\.\w+|\w+)'
-            { 
+            '(?<Size>\d+)\s(?<Name>\w+\.\w+|\w+)' { 
                 "Create file $($matches.Name)" 
                 $fileCount++
                 $file = New-File -Name $matches.Name -Size $matches.Size -Parent $cur
                 $cur.AddChild($file)
             }
-            '\$\scd\s\.\.'
-            { 
+            '\$\scd\s\.\.' { 
                 "Go up a directory" 
                 $cur = $cur.Parent
             }
@@ -168,18 +140,15 @@ function Build-Directory
 
 }
 
-function New-Directory([string]$name,[Directory]$parent)
-{
+function New-Directory([string]$name, [Directory]$parent) {
     return [Directory]::new($name, 0, $true, $parent)
 }
 
-function New-File([string]$name,[int]$size,[Directory]$parent)
-{
+function New-File([string]$name, [int]$size, [Directory]$parent) {
     return [Directory]::new($name, $size, $false, $parent) 
 }
 
-function Convert-InputToArray([string]$filename)
-{
+function Convert-InputToArray([string]$filename) {
     $lineInput = (Get-Content $filename) -split "`n"
     return $lineInput[1..($lineInput.count - 1)]
 }
