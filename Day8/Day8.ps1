@@ -3,25 +3,31 @@ using namespace System.Collections.Generic
 function Invoke-Main
 {
 
-    $data = [List[int[]]]::new()
-
-    $list = Build-List -filename "testinput.txt" -list $data
+    [List[Int[]]]$list = Build-List -filename "testinput.txt"
 
     return $list
 
 }
 
-function Build-List([string]$filename,[List[Int[]]]$data)
+function Build-List([string]$filename)
 {
+    [OutputType([List[Int[]]])]
+
+    $data = [List[int[]]]::new()
+
     $lineInput = (Get-Content $filename) -split "`n"
-    $rowCount = 0
+
     foreach ($line in $lineInput)
     {
-        $lineArray = [int[]][string[]]$line.ToCharArray()
-        $data.Add($lineArray)
-        $rowCount++
+
+        $lineArray = $line.ToCharArray() | ForEach-Object { [convert]::ToInt32($_, 10) }
+
+        $list.Add($lineArray)
+
     }
-    return $data
+
+    return $list
+
 }
 
 Invoke-Main
