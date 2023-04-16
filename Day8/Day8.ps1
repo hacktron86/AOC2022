@@ -103,7 +103,9 @@ function Search-AllDirections ($y, $x, $list) {
     }
     # check down
     if ( $list[0][$y][$x] -gt $list[0][$y + 1][$x] ) {
-        if ( Search-Direction -y $y -x $x -list [array]::Reverse($list[1][$x][$y..($list[1][$x].length-1)]) ) {
+        $temp = ($list[1][$x][$y..($list[1][$x].length-1)]).clone()
+        [array]::Reverse($temp)
+        if ( Search-Direction -y $y -x $x -list $temp ) {
             return $true
         }
     }
@@ -115,7 +117,9 @@ function Search-AllDirections ($y, $x, $list) {
     }
     # check right
     if ( $list[0][$y][$x] -gt $list[0][$y][$x + 1] ) {
-        if ( Search-Direction -y $y -x $x -list [array]::Reverse($list[0][$y][$x..($list[0][$y].length-1)]) ) {
+        $temp = ($list[0][$y][$x..($list[0][$y].length-1)]).clone()
+        [array]::Reverse($temp)
+        if ( Search-Direction -y $y -x $x -list $temp ) {
             return $true
         }
     }
@@ -125,6 +129,8 @@ function Search-AllDirections ($y, $x, $list) {
 
 function Search-Direction ($y, $x, $list) {
 
+    $max = 0
+
     for ( $i = 0; $i -lt ($list.count - 1); $i++ ) {
 
         if ( $list[-1] -lt $list[$i] ) {
@@ -132,9 +138,24 @@ function Search-Direction ($y, $x, $list) {
             return $false
 
         }
+
+        if ( $max -lt $list[$i]) {
+
+            $max = $list[$i]
+
+        }
+
     }
 
+    if ( $max -ge $list[-1] ) {
+
+        return $false
+
+    } else {
+
     return $true    
+
+    }
 
 }
 
