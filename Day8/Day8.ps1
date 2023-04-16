@@ -2,13 +2,23 @@ using namespace System.Collections.Generic
 
 function Invoke-Main {
 
-    $list = Build-List -filename "testinput.txt"
+    $list = Build-List -filename "input.txt"
 
-    $visibleTrees = New-Object 'object[,]' $list[0].Count, $list[0][0].Count
+    Invoke-TreeVisibilityFunction -list $list
 
-    Invoke-TreeVisibilityFunction -list $list -visible $visibleTrees
+    $dayOne = Get-VisibleTreeCount -list $list[2]
     
-    return $null
+    return $dayOne
+
+}
+
+function Get-VisibleTreeCount($list) {
+
+    $res = foreach ($row in $list) {
+        $row | Where-Object { $_ -eq $true}
+    }
+
+    return $res | Measure-Object | Select-Object -ExpandProperty Count
 
 }
 
@@ -42,53 +52,86 @@ function Build-List([string]$filename) {
 
     }
 
-    return @($hList, $vList)
+    $visibleList = [List[bool[]]]::new()
+
+    for ( $y = 0; $y -lt $lineInput.Length; $y++ ) {
+
+        $temp = for ( $x = 0; $x -lt $lineInput[0].Length; $x++ ) {
+
+            if (
+                    (($y -eq 0) -or ($y -eq $lineInput.Length - 1)) -or
+                    (($x -eq 0) -or ($x -eq $lineInput[0].Length - 1))
+            ) {
+                $true
+            }
+            else {
+                $false
+            }
+        }
+
+        $visibleList.Add($temp)
+
+    }
+
+    return @($hList, $vList, $visibleList)
 
 }
 
-function Invoke-TreeVisibilityFunction ($list, $visibleTrees) {
+function Invoke-TreeVisibilityFunction ($list) {
 
     for ( $y = 1; $y -lt ( $list[0].Count - 1 ); $y++ ) {
 
         for ( $x = 1; $x -lt ( $list[0][$y].Count - 1 ); $x++) {
 
-            #Write-Information $list[0][$y][$x] -InformationAction Continue
-
-            Search-AllDirections -y $y -x $x -list $list -visible $visibleTrees
+            $list[2][$y][$x] = Search-AllDirections -y $y -x $x -list $list
 
         }
 
     }
 
     return $null
+
 }
 
-function Search-AllDirections ($y, $x, $list, $visibleTrees) {
+function Search-AllDirections ($y, $x, $list) {
 
     # check up
     if ( $list[0][$y][$x] -gt $list[0][$y - 1][$x] ) {
-        Search-Direction -y $y -x $x -list $list[1][$x] -visible $visibleTrees
+        if ( Search-Direction -y $y -x $x -list $list[1][$x][0..$y] ) {
+            return $true
+        }
     }
     # check down
     if ( $list[0][$y][$x] -gt $list[0][$y + 1][$x] ) {
-        Search-Direction -y $y -x $x -list [array]::Reverse($list[1][$x]) -visible $visibleTrees
+        if ( Search-Direction -y $y -x $x -list [array]::Reverse($list[1][$x][$y..($list[1][$x].length-1)]) ) {
+            return $true
+        }
     }
     # check left    
     if ( $list[0][$y][$x] -gt $list[0][$y][$x - 1] ) {
-        Search-Direction -y $y -x $x -list $list[0][$y] -visible $visibleTrees
+        if ( Search-Direction -y $y -x $x -list $list[0][$y][0..$x] ) {
+            return $true
+        }
     }
     # check right
     if ( $list[0][$y][$x] -gt $list[0][$y][$x + 1] ) {
-        Search-Direction -y $y -x $x -list [array]::Reverse($list[0][$y]) -visible $visibleTrees
+        if ( Search-Direction -y $y -x $x -list [array]::Reverse($list[0][$y][$x..($list[0][$y].length-1)]) ) {
+            return $true
+        }
     }
-    return
+    return $false
 
 }
 
-function Search-Direction ($y, $x, $list, $visibleTrees) {
+function Search-Direction ($y, $x, $list) {
 
-    for ( $i = 1; $i -lt ($list.count - 1); $i++) {
+    for ( $i = 0; $i -lt ($list.count - 1); $i++ ) {
 
+        if ( $list[-1] -lt $list[$i] ) {
+
+            return $false
+
+        }
     }
 
     return $true    
