@@ -7,15 +7,31 @@ function Invoke-Main {
     Invoke-TreeVisibilityFunction -list $list
 
     $dayOne = Get-VisibleTreeCount -list $list[2]
+
+    Write-Information "DayOne Answer: $dayOne" -InformationAction Continue
+
+    $dayTwo = Get-MaxScenicScore -list $list[3]
+
+    Write-Information "DayTwo Answer: $dayTwo" -InformationAction Continue
     
-    return $dayOne
+    return $list
+
+}
+
+function Get-MaxScenicScore($list) {
+
+    $res = foreach ($row in $list) {
+        $row
+    } 
+
+    return $res | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
 
 }
 
 function Get-VisibleTreeCount($list) {
 
     $res = foreach ($row in $list) {
-        $row | Where-Object { $_ -eq $true}
+        $row | Where-Object { $_ -eq $true }
     }
 
     return $res | Measure-Object | Select-Object -ExpandProperty Count
@@ -73,7 +89,21 @@ function Build-List([string]$filename) {
 
     }
 
-    return @($hList, $vList, $visibleList)
+    $scenicScore = [List[int[]]]::new()
+
+    for ( $y = 0; $y -lt $lineInput.Length; $y++ ) {
+
+        $temp = for ( $x = 0; $x -lt $lineInput[0].Length; $x++ ) {
+
+            0
+
+        }
+
+        $scenicScore.Add($temp)
+
+    }
+
+    return @($hList, $vList, $visibleList, $scenicScore)
 
 }
 
@@ -85,11 +115,65 @@ function Invoke-TreeVisibilityFunction ($list) {
 
             $list[2][$y][$x] = Search-AllDirections -y $y -x $x -list $list
 
+            $list[3][$y][$x] = Get-ScenicScore -y $y -x $x -list $list
+
+            Write-Information "Scenic Score: $($list[3][$y][$x])"
+
         }
 
     }
 
     return $null
+
+}
+
+function Get-ScenicScore ($y, $x, $list) {
+
+    # check up
+    $up = Get-SSOneDirection -y $y -x $x -list $list[1][$x][0..$y]
+
+    # check down
+    $temp = ($list[1][$x][$y..($list[1][$x].length - 1)]).clone()
+    [array]::Reverse($temp)
+    $down = Get-SSOneDirection -y $y -x $x -list $temp 
+
+    # check left    
+    $left = Get-SSOneDirection -y $y -x $x -list $list[0][$y][0..$x]
+
+    # check right
+    $temp = ($list[0][$y][$x..($list[0][$y].length - 1)]).clone()
+    [array]::Reverse($temp)
+    $right = Get-SSOneDirection -y $y -x $x -list $temp
+
+    return $up * $down * $left * $right
+
+}
+
+function Get-SSOneDirection ($y, $x, $list) {
+
+    $max = 0
+
+    $count = 0
+
+    for ( $i = ($list.count - 2); $i -ge 0; $i-- ) {
+
+        $count++
+
+        if ( $max -lt $list[$i]) {
+
+            $max = $list[$i]
+
+        }
+
+        if ( $max -ge $list[-1] ) {
+
+            return $count
+
+        }
+
+    }
+
+    return $count
 
 }
 
