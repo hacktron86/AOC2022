@@ -20,24 +20,26 @@ class RopeEnd {
         $this.name = $name
         $this.x = 0
         $this.y = 0
+        $this.Update()
     }
 
     [void] Move([string]$direction, [int]$count) {
-        $temp = [Coords]::new($this.x,$this.y)
-        $dup = $false
-        foreach ($coord in $this.history) {
-            if ( -not (Compare-Object $coord $temp -Property {$_.x},{$_.y})) {
-                $dup = $true
-            }
-        }
-        if (-not $dup) {
-            $this.history += $temp
-        }
         switch ($direction) {
             "R" { $this.x = $this.x + $count }
             "L" { $this.x = $this.x - $count }
             "U" { $this.y = $this.y + $count }
             "D" { $this.y = $this.y - $count }
+        }
+    }
+
+    [void] Update() {
+        $temp = [Coords]::new($this.x, $this.y)
+        $dup = $false
+        if ( $this.history | Where-Object { ($_.x -eq $temp.x) -and ($_.y -eq $temp.y)} ) {
+            $dup = $true
+        }
+        if (-not $dup) {
+            $this.history += $temp
         }
     }
 
@@ -48,16 +50,23 @@ function Invoke-Main {
     [CmdletBinding()]
     param()
 
-    $list = Build-List -filename "testinput.txt"
+    $list = Build-List -filename "input.txt"
 
     $head = [RopeEnd]::new("head")
 
     $tail = [RopeEnd]::new("tail")
+            
+    # Write-Verbose "Head - x: $($head.x); y: $($head.y);" 
+    # Write-Verbose "Tail - x: $($tail.x); y: $($tail.y);" 
+    # Write-Verbose "End"
+
+    $count = 0
+    Write-Verbose "Total Lines: $($list.count)"
 
     foreach ($line in $list) {
+        Write-Verbose "Line: $count" 
+        $count++
         for ($i = 0; $i -lt $line.Count; $i++) {
-            Write-Verbose "Head - x: $($head.x); y: $($head.y);" 
-            Write-Verbose "Tail - x: $($tail.x); y: $($tail.y);" 
             $head.Move($line.Move, 1)
 
             $xDiff = $head.x - $tail.x
@@ -66,23 +75,28 @@ function Invoke-Main {
             $yDiffAbs = [Math]::Abs($yDiff)
 
             if ($xDiffAbs -eq 2) {
-                if($xDiff -lt 0) {
-                    $tail.Move("L",1)
-                } else {
-                    $tail.Move("R",1)
+                if ($xDiff -lt 0) {
+                    $tail.Move("L", 1)
+                }
+                else {
+                    $tail.Move("R", 1)
                 }
                 $tail.y = $head.y
             }
             if ($yDiffAbs -eq 2) {
-                if($xDiff -lt 0) {
-                    $tail.Move("D",1)
-                } else {
-                    $tail.Move("U",1)
+                if ($xDiff -lt 0) {
+                    $tail.Move("D", 1)
+                }
+                else {
+                    $tail.Move("U", 1)
                 }
                 $tail.x = $head.x
             }
+            $tail.Update()
             
-            Write-Verbose ""
+            # Write-Verbose "Head - x: $($head.x); y: $($head.y);" 
+            # Write-Verbose "Tail - x: $($tail.x); y: $($tail.y);" 
+            # Write-Verbose "End"
         }
     }
 
@@ -112,4 +126,4 @@ function Build-List {
 
 }
 
-Invoke-Main -verbose
+Invoke-Main -Verbose
