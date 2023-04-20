@@ -34,13 +34,7 @@ class RopeEnd {
 
     [void] Update() {
         $temp = [Coords]::new($this.x, $this.y)
-        $dup = $false
-        if ( $this.history | Where-Object { ($_.x -eq $temp.x) -and ($_.y -eq $temp.y)} ) {
-            $dup = $true
-        }
-        if (-not $dup) {
-            $this.history += $temp
-        }
+        $this.history += $temp
     }
 
 }
@@ -75,7 +69,7 @@ function Invoke-Main {
             $yDiffAbs = [Math]::Abs($yDiff)
 
             if ($xDiffAbs -eq 2) {
-                if ($xDiff -lt 0) {
+                if ($head.x -lt $tail.x) {
                     $tail.Move("L", 1)
                 }
                 else {
@@ -84,7 +78,7 @@ function Invoke-Main {
                 $tail.y = $head.y
             }
             if ($yDiffAbs -eq 2) {
-                if ($xDiff -lt 0) {
+                if ($head.y -lt $tail.y) {
                     $tail.Move("D", 1)
                 }
                 else {
@@ -97,12 +91,20 @@ function Invoke-Main {
             # Write-Verbose "Head - x: $($head.x); y: $($head.y);" 
             # Write-Verbose "Tail - x: $($tail.x); y: $($tail.y);" 
             # Write-Verbose "End"
+
+            # Write-Verbose ""
+
         }
     }
+
+    $tailCount = $tail.history | Select-Object -Property x, y -Unique | Measure-Object | Select-Object -ExpandProperty Count
+
+    Write-Verbose "DayOne: $tailCount"
 
     return $tail
 
 }
+
 
 function Build-List {
     param (
